@@ -1,24 +1,32 @@
-from flask import Flask
+from flask import Flask, Response
 app = Flask(__name__)
 
 # Note: We don't need to call run() since our application is embedded within
 # the App Engine WSGI application server.
 
 import urllib2
+import json
 
 from HTMLParser import HTMLParser
 
 # create a subclass and override the handler methods
-class MyHTMLParser(HTMLParser):
+class GamesParser(HTMLParser):
+    def __init__(self):
+        HTMLParser.__init__(self)
+        self.games = []
     def handle_starttag(self, tag, attrs):
-        print "Encountered a start tag:"
-        print tag
+        if tag == 'a':
+            href = None
+            name = None
+            for name, value in attrs:
+                if name == 'href':
+                    href = value
+                    self.games.append(href)
+                    print "Adding link: ", href
     def handle_endtag(self, tag):
-        print "Encountered an end tag :"
-        print tag
+        print "End tag: ", tag
     def handle_data(self, data):
-        print "Encountered some data  :"
-        print data
+        print "Data: ", data
 
 @app.route('/')
 def hello():
@@ -30,10 +38,13 @@ def hello():
 @app.route('/games')
 def games():
     url = 'http://gd2.mlb.com/components/game/mlb/year_2014/month_04/day_12/'
-    html = urllib2.urlopen(url)
-    parser = MyHTMLParser()
+    resp = urllib2.urlopen(url)
+    html = resp.read()
+    parser = GamesParser()
     parser.feed(html)
-    return "Games page"
+    return Response(json.dumps({
+        'games': parser.games
+    }), mimetype='application/json')
 
 @app.errorhandler(404)
 def page_not_found(e):
