@@ -6,6 +6,7 @@ app = Flask(__name__)
 
 import urllib2
 import json
+import re
 
 from HTMLParser import HTMLParser
 
@@ -20,13 +21,8 @@ class GamesParser(HTMLParser):
             name = None
             for name, value in attrs:
                 if name == 'href':
-                    href = value
-                    self.games.append(href)
-                    print "Adding link: ", href
-    def handle_endtag(self, tag):
-        print "End tag: ", tag
-    def handle_data(self, data):
-        print "Data: ", data
+                    if re.match('gid_(\d+)_(\d+)_(\d+).*', value):
+                        self.games.append(value)
 
 @app.route('/')
 def hello():
